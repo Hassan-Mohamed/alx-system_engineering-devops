@@ -1,29 +1,37 @@
 #!/usr/bin/python3
-"""Script that uses REST API"""
+"""
+Using https://jsonplaceholder.typicode.com
+gathers data from API and exports it to JSON file
+Implemented using recursion
+"""
 import json
+import re
 import requests
 import sys
 
 
-def make_json(users=None, todos=None, u=None):
-    """Turns payloads into CSV format"""
-    all_list = []
-    with open(sys.argv[1] + ".json", "w") as f:
-        for i in todos:
-            all_list.append({"task": i.get("title"),
-                             "completed": i.get("completed"),
-                             "username": users[0].get("username")})
-        alljson = {str(u): all_list}
-        json.dump(alljson, f)
+API = "https://jsonplaceholder.typicode.com"
+"""REST API url"""
 
 
-if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1].isdigit():
-        args_id = {"id": sys.argv[1]}
-        users = requests.get("https://jsonplaceholder.typicode.com/users",
-                             params=args_id).json()
-        args_userid = {"userId": sys.argv[1]}
-        todos = requests.get("https://jsonplaceholder.typicode.com/todos",
-                             params=args_userid).json()
-
-        make_json(users, todos, sys.argv[1])
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        if re.fullmatch(r'\d+', sys.argv[1]):
+            id = int(sys.argv[1])
+            user_res = requests.get('{}/users/{}'.format(API, id)).json()
+            todos_res = requests.get('{}/todos'.format(API)).json()
+            user_name = user_res.get('username')
+            todos = list(filter(lambda x: x.get('userId') == id, todos_res))
+            with open("{}.json".format(id), 'w') as json_file:
+                user_data = list(map(
+                    lambda x: {
+                        "task": x.get("title"),
+                        "completed": x.get("completed"),
+                        "username": user_name
+                    },
+                    todos
+                ))
+                user_data = {
+                    "{}".format(id): user_data
+                }
+                json.dump(user_data, json_file)
